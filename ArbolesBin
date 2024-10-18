@@ -1,0 +1,555 @@
+#include<stdio.h>
+#include<windows.h>
+#include <stdlib.h>
+#include <graphics.h>
+#include<conio.h>
+#define color SetConsoleTextAttribute
+
+#define TRUE 1
+#define FALSE 0
+
+void gotoxy(int x, int y) {
+    HANDLE hcon;
+    hcon = GetStdHandle(STD_OUTPUT_HANDLE);
+    COORD dwPos;
+    dwPos.X = x;
+    dwPos.Y = y;
+    SetConsoleCursorPosition(hcon, dwPos);
+}
+typedef struct _nodo {
+    struct _nodo *izquierdo;
+    int dato;
+    struct _nodo *derecho;
+} tipoNodo;
+
+typedef tipoNodo *pNodo;
+typedef tipoNodo *Arbol;
+
+int Vacio(Arbol r) {
+    return r == NULL;
+}
+
+int EsHoja(pNodo r) {
+    return !r->derecho && !r->izquierdo;
+}
+
+void Podar(Arbol *a) {
+    if (*a) {
+        Podar(&(*a)->izquierdo); 
+        Podar(&(*a)->derecho);   
+        free(*a);                
+        *a = NULL;
+    }
+}
+
+void Vaciar(Arbol *a) {
+    Podar(a);
+    *a = NULL; 
+}
+/*/int Buscar(Arbol a, int dat, int *posicion) {
+    pNodo actual = a;
+    *posicion = 1; 
+
+    while (!Vacio(actual)) {
+        if (dat == actual->dato)
+            return TRUE; 
+        else if (dat < actual->dato) {
+            actual = actual->izquierdo; 
+        } else {
+            actual = actual->derecho;
+        }
+        (*posicion)++;
+    }
+    return FALSE; 
+}/*/
+int Buscar(Arbol a, int dat)
+{
+   pNodo actual = a;
+
+   /* TodavÃ­a puede aparecer, ya que quedan nodos por mirar */
+   while(!Vacio(actual)) {
+      if(dat == actual->dato){
+      	gotoxy(23,20); printf("El elemento se encuentra en el arbol");
+      	gotoxy(23,21);
+      	system("pause");
+    	gotoxy(23,20); printf("                                                                  ");
+    	gotoxy(23,21); printf("                                                                    ");
+	  	return TRUE; /* dato encontrado */
+	  } 
+      else if(dat < actual->dato) actual = actual->izquierdo; /* Seguir */
+      else if(dat > actual->dato) actual = actual->derecho;
+   }
+   gotoxy(35,10); printf("El elemento no se encuentra en el arbol");
+   return FALSE; /* No estÃ¡ en Ã¡rbol */
+}
+
+void Insertar(Arbol *a, int dat) {
+    pNodo padre = NULL;
+    pNodo actual = *a;
+    
+    int posicion;
+    /*/if (Buscar(*a, dat, &posicion)) {
+        gotoxy(23, 19);
+        printf("El dato %d ya se encuentra en el arbol en la posicion %d.", dat, posicion);
+        getch();
+        gotoxy(23, 19);
+        printf("                                                             ");
+        return;
+    }/*/
+    while (!Vacio(actual) && dat != actual->dato) {
+        padre = actual;
+        if (dat < actual->dato)
+            actual = actual->izquierdo;
+        else if (dat > actual->dato)
+            actual = actual->derecho;
+    }
+
+    if (!Vacio(actual))
+        return;
+    if (Vacio(padre)) {
+        *a = (Arbol)malloc(sizeof(tipoNodo));
+        (*a)->dato = dat;
+        (*a)->izquierdo = (*a)->derecho = NULL;
+    } else if (dat < padre->dato) {
+        actual = (Arbol)malloc(sizeof(tipoNodo));
+        padre->izquierdo = actual;
+        actual->dato = dat;
+        actual->izquierdo = actual->derecho = NULL;
+    } else if (dat > padre->dato) {
+        actual = (Arbol)malloc(sizeof(tipoNodo));
+        padre->derecho = actual;
+        actual->dato = dat;
+        actual->izquierdo = actual->derecho = NULL;
+    }
+}
+void mostrarArbol(Arbol raiz, int x, int y, int nivel) {
+    int radio = 25;
+    char valorStr[100];
+
+    if (raiz == NULL) {
+        return;
+    }
+
+    int centroX = x;
+    int centroY = y;
+
+    setcolor(WHITE);
+    circle(centroX, centroY, radio);
+    sprintf(valorStr, "%d", raiz->dato);
+    outtextxy(centroX - 3, centroY - 6, valorStr);
+
+    int izquierdoX = x - (200 / (nivel + 1));
+    int izquierdoY = y + 100;
+
+    int derechoX = x + (200 / (nivel + 1));
+    int derechoY = y + 100;
+
+    if (raiz->izquierdo != NULL) {
+        setcolor(YELLOW);
+        line(centroX - radio, centroY + radio, izquierdoX, izquierdoY - radio);
+        mostrarArbol(raiz->izquierdo, izquierdoX, izquierdoY, nivel + 1);
+    }
+
+    if (raiz->derecho != NULL) {
+        setcolor(YELLOW);
+        line(centroX + radio, centroY + radio, derechoX, derechoY - radio);
+        mostrarArbol(raiz->derecho, derechoX, derechoY, nivel + 1);
+    }
+}
+void Eliminar(Arbol *a, int dat) {
+    if (Vacio(*a)) {
+    	gotoxy(23,20);
+        printf("El arbol esta vacio. No se puede realizar la eliminacion.");
+        gotoxy(23,21);
+        system("pause");
+        gotoxy(23,20);
+        printf("                                                          ");
+        gotoxy(23,21);
+        printf("                                                          ");
+        return;
+    }
+
+    pNodo padre = NULL;
+    pNodo actual = *a;
+
+    while (!Vacio(actual) && dat != actual->dato) {
+        padre = actual;
+        if (dat < actual->dato)
+            actual = actual->izquierdo;
+        else if (dat > actual->dato)
+            actual = actual->derecho;
+    }
+
+    if (Vacio(actual)) {
+        printf("El dato %d no se encuentra en el arbol.\n", dat);
+        return;
+    }
+
+    if (EsHoja(actual) || (actual->izquierdo == NULL && actual->derecho == NULL)) {
+        if (padre == NULL) {
+            free(actual);
+            *a = NULL;
+        } else {
+            if (padre->izquierdo == actual)
+                padre->izquierdo = NULL;
+            else
+                padre->derecho = NULL;
+
+            free(actual);
+        }
+    } else if (actual->derecho == NULL) {
+        if (padre == NULL) {
+            *a = actual->izquierdo;
+            free(actual);
+        } else {
+            if (padre->izquierdo == actual)
+                padre->izquierdo = actual->izquierdo;
+            else
+                padre->derecho = actual->izquierdo;
+
+            free(actual);
+        }
+    } else if (actual->izquierdo == NULL) {
+        if (padre == NULL) {
+            *a = actual->derecho;
+            free(actual);
+        } else {
+            if (padre->izquierdo == actual)
+                padre->izquierdo = actual->derecho;
+            else
+                padre->derecho = actual->derecho;
+
+            free(actual);
+        }
+    } else {
+        pNodo sustitutoPadre = actual;
+        pNodo sustituto = actual->derecho;
+
+        while (sustituto->izquierdo != NULL) {
+            sustitutoPadre = sustituto;
+            sustituto = sustituto->izquierdo;
+        }
+
+        actual->dato = sustituto->dato;
+
+        if (sustitutoPadre->izquierdo == sustituto)
+            sustitutoPadre->izquierdo = sustituto->derecho;
+        else
+            sustitutoPadre->derecho = sustituto->derecho;
+
+        free(sustituto);
+    }
+}
+
+void InOrden(Arbol a) {
+    if (a->izquierdo)
+        InOrden(a->izquierdo);
+    printf("%d, ", a->dato);
+    if (a->derecho)
+        InOrden(a->derecho);
+}
+
+void margen()
+{
+    int x, y;
+    x = 20;
+    gotoxy(x, 1);
+    printf("%c", 218);
+    gotoxy(x, 26);
+    printf("%c", 192);
+    for (x =21; x <= 111; x++)
+    {
+        gotoxy(x, 1);
+        printf("%c", 196);
+        gotoxy(x, 26);
+        printf("%c", 196);
+    }
+    for (y = 2; y <= 25; y++)
+    {
+        gotoxy(20, y);
+        printf("%c", 179);
+        gotoxy(112, y);
+        printf("%c", 179);
+    }
+    gotoxy(112, 1);
+    printf("%c", 191);
+    gotoxy(112, 26);
+    printf("%c", 217);
+    
+    x = 30;
+    gotoxy(x, 2);
+    printf("%c", 218);
+    gotoxy(x, 4);
+    printf("%c", 192);
+
+    for (x = 31; x <= 94; x++)
+    {
+        gotoxy(x, 2);
+        printf("%c", 196);
+        gotoxy(x, 4);
+        printf("%c", 196);
+    }
+    gotoxy(30, 3);
+    printf("%c", 179);
+    gotoxy(94, 3);
+    printf("%c", 179);
+    gotoxy(94, 2);
+    printf("%c", 191);
+    gotoxy(94, 4);
+    printf("%c", 217);
+    
+    x = 44;
+    gotoxy(x, 6);
+    printf("%c", 218);
+    gotoxy(x, 8);
+    printf("%c", 192);
+
+    for (x = 45; x <= 80; x++)
+    {
+        gotoxy(x, 6);
+        printf("%c", 196);
+        gotoxy(x, 8);
+        printf("%c", 196);
+    }
+    gotoxy(44,7);
+    printf("%c", 179);
+    gotoxy(81,7);
+    printf("%c", 179);
+    gotoxy(81,6);
+    printf("%c", 191);
+    gotoxy(81,8);
+    printf("%c", 217);
+
+}
+void margen2()
+{
+    int x, y;
+    x = 20;
+    gotoxy(x, 1);
+    printf("%c", 218);
+    gotoxy(x, 26);
+    printf("%c", 192);
+    for (x =21; x <= 111; x++)
+    {
+        gotoxy(x, 1);
+        printf("%c", 196);
+        gotoxy(x, 26);
+        printf("%c", 196);
+    }
+    for (y = 2; y <= 25; y++)
+    {
+        gotoxy(20, y);
+        printf("%c", 179);
+        gotoxy(112, y);
+        printf("%c", 179);
+    }
+    gotoxy(112, 1);
+    printf("%c", 191);
+    gotoxy(112, 26);
+    printf("%c", 217);
+    
+   x = 30;
+    gotoxy(x, 2);
+    printf("%c", 218);
+    gotoxy(x, 4);
+    printf("%c", 192);
+
+    for (x = 31; x <= 94; x++)
+    {
+        gotoxy(x, 2);
+        printf("%c", 196);
+        gotoxy(x, 4);
+        printf("%c", 196);
+    }
+    gotoxy(30, 3);
+    printf("%c", 179);
+    gotoxy(94, 3);
+    printf("%c", 179);
+    gotoxy(94, 2);
+    printf("%c", 191);
+    gotoxy(94, 4);
+    printf("%c", 217);
+
+}
+
+void mensajeBienvenida() {
+    HANDLE hConsole = GetStdHandle( STD_OUTPUT_HANDLE );
+    margen();
+    gotoxy(42, 3);
+    printf("Arboles de busqueda binarios");
+    gotoxy(80,3);
+    gotoxy(52, 7);
+    printf("  Introduccion:");
+   	gotoxy(23, 10);
+    printf("Este programa te permite realizar operaciones basicas en arboles de busqueda binarios. ");
+    gotoxy(23, 11);
+	printf("Aqui, podras insertar, buscar,eliminar y vaciar");
+	gotoxy(23, 12);
+	printf(" nodos en un arbol, todo desde la comodidad de este menu interactivo.");
+/*	gotoxy(30, 14);
+	printf("Instrucciones:");/*/
+	gotoxy(23, 15);
+	printf("1. Insertar: Agrega un nuevo dato al arbol.");
+	gotoxy(23, 16);
+	printf("2. Buscar: Encuentra la posicion de un dato especifico en el arbol.");
+	gotoxy(23, 17);
+	printf("3. Eliminar: Elimina un dato del arbol.");
+	gotoxy(23, 18);
+	printf("4. Vaciar: Elimina todos los nodos del arbol.");
+	gotoxy(23, 19);
+	printf("5. Salir: Cierra el programa.");
+    color(hConsole,3);
+    gotoxy(45,20); printf("Hecho para la materia de Estructura de Datos");
+    gotoxy(45,21); printf("Encargado: Dr. Jorge Ochoa Sumoano.");
+    gotoxy(45, 22); printf("Por: Lizeth Elisa Sánchez Jmz");
+    gotoxy(64,22); printf("%c",160);
+    color(hConsole,7);
+    gotoxy(50, 24);
+    printf("Presiona una tecla para comenzar...");
+    getch();
+    system("cls");
+}
+void mensajeDespedida() {
+	int i;
+	HANDLE hConsole = GetStdHandle( STD_OUTPUT_HANDLE );
+    for ( i = 0; i < 5; i++) {
+        system("cls");
+        gotoxy(45, 15);
+        color(hConsole,2);
+        printf("Gracias por usar el programa, saliendo...");
+        Sleep(500);
+        system("cls");
+        Sleep(500);
+    }
+}
+void Menu(){
+    int opcion, dato, i, posicion;
+    Arbol ArbolInt = NULL;
+
+    do {
+        gotoxy(23,9);
+        printf("1. Insertar");
+        gotoxy(23,10);
+        printf("2. Mostrar");
+        gotoxy(23,11);
+        printf("3. Buscar");
+        gotoxy(23,12);
+        printf("4. Eliminar");
+        gotoxy(23,13);
+        printf("5. Vaciar");
+        gotoxy(23,14);
+        printf("6. Salir");
+
+        gotoxy(23,15);
+        printf("Elija una opcion:  ");
+        gotoxy(42,15);
+        printf("   ");
+        gotoxy(42,15); 
+        scanf("%d", &opcion);
+        
+        switch (opcion) {
+            case 1:
+            	gotoxy(23,19);
+            	printf("                                                                       ");
+                gotoxy(23,17);
+                printf("Ingrese el dato a insertar: ");
+                scanf("%d", &dato);
+                gotoxy(23,19);
+                Insertar(&ArbolInt, dato);
+                break;
+        	case 2: 
+    				initwindow(1600, 900);
+					mostrarArbol(ArbolInt, 750, 15, 0);
+					getch();
+					closegraph();
+					break;
+			case 3:
+				    gotoxy(23, 17);
+    				printf("Ingrese el dato a buscar: ");
+    				scanf("%d", &dato);
+
+    			Buscar(ArbolInt, dato);
+    				gotoxy(23, 20);
+    				printf("                                                             ");
+    			//	getch();
+    				break;
+            /*/case 3:
+                gotoxy(23, 17);
+                printf("Ingrese el dato a buscar: ");
+                scanf("%d", &dato);
+                if (Buscar(ArbolInt, dato, &posicion)) {
+                    gotoxy(23, 20);
+                    printf("El dato %d se encuentra en la posicion %d.", dato, posicion);
+                } else {
+                    gotoxy(23, 20);
+                    printf("El dato %d no se encuentra en el árbol.", dato);
+                }
+                getch();
+                gotoxy(23, 20);
+                printf("                                                             ");
+                break;/*/
+            case 4:
+                gotoxy(23,17);
+                printf("Ingrese el dato a eliminar: ");
+                scanf("%d", &dato);
+                gotoxy(60,10);
+                printf("                                              ");
+                Eliminar(&ArbolInt, dato);
+                break;
+            case 5:
+                Vaciar(&ArbolInt);
+                gotoxy(23,19);
+            	printf("                                                                                        ");
+            	//fflush(stdin);
+            	gotoxy(23,19);
+                printf("El arbol ha sido vaciado.");
+                gotoxy(23,20);
+                system("pause");
+                gotoxy(23,20); printf("                                         ");
+                
+              //  system("cls");
+                //Menu();
+                break;
+            case 6:
+            	closegraph(); 
+                mensajeDespedida();
+                break;
+        }
+
+      if (opcion != 6) {
+            gotoxy(23,19);
+            printf("                                ");
+            gotoxy(23,19);
+            if (!Vacio(ArbolInt)) {
+                printf("Arbol InOrden: ");
+                InOrden(ArbolInt);
+            }// else {
+               // printf("Arbol vacío.");
+          //  }
+        }
+
+        for (i = 17; i <= 18; i++) {
+            gotoxy(23, i);
+            printf("                                         ");
+        }
+
+    } while (opcion != 6);
+
+}
+
+ main() {
+    int gdriver = DETECT, gmode;
+    initgraph(&gdriver, &gmode, "C:\\estructuradedatos\\BGI");
+
+    margen();
+    mensajeBienvenida();
+    margen2();
+
+    gotoxy(40, 3);
+    color(GetStdHandle(STD_OUTPUT_HANDLE), 9);
+    printf("Arboles de busqueda binarios - Menu - ejecucion");
+    color(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+
+    Menu();
+    //closegraph(); 
+}
